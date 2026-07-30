@@ -22,7 +22,7 @@ import mekanism.common.registration.impl.ItemRegistryObject;
 import mekanism.common.registries.MekanismItems;
 
 import com.jerry.mekanism_extras.api.ExtraUpgrade;
-import com.jerry.mekanism_extras.common.registry.ExtraItem;
+import com.jerry.mekanism_extras.common.registries.ExtraItems;
 
 
 import dev.lapis256.mekanism_empowered.api.MekEmpUpgrade;
@@ -118,13 +118,13 @@ public enum UpgradeProvider implements IBlockComponentProvider, IServerDataProvi
         if (ModList.get().isLoaded("mekanism_extras")) {
 
             if (ExtraUpgrade.STACK.equals(upgrade))
-                return ExtraItem.STACK;
+                return ExtraItems.STACK;
 
             if (ExtraUpgrade.CREATIVE.equals(upgrade))
-                return ExtraItem.CREATIVE;
+                return ExtraItems.CREATIVE;
 
             if (ExtraUpgrade.IONIC_MEMBRANE.equals(upgrade))
-                return ExtraItem.IONIC_MEMBRANE;
+                return ExtraItems.IONIC_MEMBRANE;
 
         }
 
