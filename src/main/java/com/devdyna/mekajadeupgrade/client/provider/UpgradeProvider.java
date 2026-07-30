@@ -93,7 +93,7 @@ public enum UpgradeProvider implements IBlockComponentProvider, IServerDataProvi
 
     @Override
     public ResourceLocation getUid() {
-        return ResourceLocation.fromNamespaceAndPath(Main.MODID, "upgrades");
+        return new ResourceLocation(Main.MODID, "upgrades");
     }
 
     public ItemRegistryObject<ItemUpgrade> getUpgrade(Upgrade upgrade) {
