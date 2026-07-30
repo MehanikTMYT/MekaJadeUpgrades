@@ -126,8 +126,8 @@ obfuscation {
 
 dependencies {
 implementation "curse.maven:meka-268560:6552911"
-implementation "curse.maven:mekaextra-1026040:6936409"
-implementation "curse.maven:jade-324717:6855440"
+implementation "curse.maven:mekaextra-1026040:8247562"
+implementation "curse.maven:jade-324717:8479276"
 
 implementation "curse.maven:empo-1256390:7545276"
 implementation "curse.maven:empocore-1256399:7545277"
