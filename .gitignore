@@ -27,3 +27,10 @@ repo
 /.vscode
 /generated
 /src/generated/resources/.cache
+
+# Port infra
+libs/
+build/
+run/
+generated/
+repo/

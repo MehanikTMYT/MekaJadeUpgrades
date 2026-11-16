@@ -4,28 +4,34 @@ import java.util.ArrayList;
 import java.util.List;
 import com.devdyna.mekajadeupgrade.Main;
 
-import mekanism.common.tile.base.TileEntityMekanism;
+import mekanism.common.block.prefab.BlockTile;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec2;
 import net.neoforged.fml.ModList;
 import snownee.jade.api.config.IPluginConfig;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.IElementHelper;
+import snownee.jade.api.ui.Element;
+import snownee.jade.api.ui.JadeUI;
 import snownee.jade.api.*;
 import mekanism.api.Upgrade;
 import mekanism.common.item.ItemUpgrade;
+import mekanism.common.tile.base.TileEntityMekanism;
+import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.registration.impl.ItemRegistryObject;
 import mekanism.common.registries.MekanismItems;
-import com.jerry.mekextras.api.ExtraUpgrade;
-import com.jerry.mekextras.common.registries.ExtraItems;
 
-import dev.lapis256.mekanism_empowered.api.MekEmpUpgrade;
-import dev.lapis256.mekanism_empowered.common.init.MekEmpItems;
-
+/*
+ * 26.1.2 port notes (vs upstream 1.3-21.1):
+ * - Jade 26.x replaced IElementHelper/IElement with JadeUI/Element and the
+ *   layout-based tooltip pipeline; item/text elements are now built via
+ *   JadeUI.item(...)/JadeUI.text(...) with size()/offset().
+ * - Mekanism 10.8.0 removed TileComponentUpgrade#isUpgradeInstalled;
+ *   installed upgrades are detected via getUpgrades(upgrade) > 0.
+ * - Optional mekextras / mekanism_empowered integrations from upstream are
+ *   dropped (no 26.1.2 ports in the fleet); see PORT_REPORT.md.
+ */
 @SuppressWarnings("null")
 public enum UpgradeProvider implements IBlockComponentProvider, IServerDataProvider<BlockAccessor> {
     INSTANCE;
@@ -33,65 +39,64 @@ public enum UpgradeProvider implements IBlockComponentProvider, IServerDataProvi
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
         CompoundTag tag = accessor.getServerData();
-        List<IElement> elements = new ArrayList<>();
-
-        int x = 0;
+        List<Element> elements = new ArrayList<>();
 
         for (Upgrade upgrade : Upgrade.values()) {
             if (tag.contains(upgrade.getSerializedName())) {
-                int count = tag.getInt(upgrade.getSerializedName());
+                int count = tag.getInt(upgrade.getSerializedName()).orElse(0);
 
-                elements.add(item(upgrade, x));
-                elements.add(countText(count, x));
-                x += 10;
+                elements.add(item(upgrade));
+                elements.add(countText(count));
             }
         }
 
         tooltip.add(elements);
     }
 
-    public IElement item(Upgrade upgrade, int x) {
+    public Element item(Upgrade upgrade) {
         try {
 
-            return IElementHelper.get()
-                    .item(new ItemStack(getUpgrade(upgrade).get()), 0.55f)
-                    .size(new Vec2(10, 10))
-                    .translate(new Vec2(x, -2))
-                    .message(null);
+            return JadeUI.item(new ItemStack(getUpgrade(upgrade).get()), 0.55f)
+                    .size(10, 10)
+                    .offset(0, -2)
+                    .narration((String) null);
 
         } catch (NullPointerException e) {
             // catch eventual crashes with a dummy item render
-            return IElementHelper.get()
-                    .item(new ItemStack(Items.BARRIER), 0.55f)
-                    .size(new Vec2(10, 10))
-                    .translate(new Vec2(x, -2))
-                    .message(null);
+            return JadeUI.item(new ItemStack(Items.BARRIER), 0.55f)
+                    .size(10, 10)
+                    .offset(0, -2)
+                    .narration((String) null);
         }
     }
 
-    public IElement countText(int count, int x) {
-        return IElementHelper.get()
-                .text(Component.literal("x" + count))
-                .size(new Vec2(5, 5))
-                .translate(new Vec2(x, -1))
-                .message(null);
+    public Element countText(int count) {
+        return JadeUI.text(Component.literal("x" + count))
+                .size(5, 5)
+                .offset(0, -1)
+                .narration((String) null);
     }
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
 
-        TileEntityMekanism be = (TileEntityMekanism) accessor.getBlockEntity();
+        if (accessor.getBlockEntity() instanceof TileEntityMekanism be) {
+            TileComponentUpgrade component = be.getComponent();
 
-        for (Upgrade upgrade : Upgrade.values())
-            if (be.getComponent() != null)
-                if (be.getComponent().isUpgradeInstalled(upgrade))
-                    data.putInt(upgrade.getSerializedName(), be.getComponent().getUpgrades(upgrade));
+            if (component != null) {
+                for (Upgrade upgrade : Upgrade.values()) {
+                    int count = component.getUpgrades(upgrade);
+                    if (count > 0)
+                        data.putInt(upgrade.getSerializedName(), count);
+                }
+            }
+        }
 
     }
 
     @Override
-    public ResourceLocation getUid() {
-        return ResourceLocation.fromNamespaceAndPath(Main.MODID, "upgrades");
+    public Identifier getUid() {
+        return Identifier.fromNamespaceAndPath(Main.MODID, "upgrades");
     }
 
     public ItemRegistryObject<ItemUpgrade> getUpgrade(Upgrade upgrade) {
@@ -112,41 +117,6 @@ public enum UpgradeProvider implements IBlockComponentProvider, IServerDataProvi
 
         if (Upgrade.STONE_GENERATOR.equals(upgrade))
             return MekanismItems.STONE_GENERATOR_UPGRADE;
-
-        if (ModList.get().isLoaded("mekanism_extras")) {
-
-            if (ExtraUpgrade.STACK.equals(upgrade))
-                return ExtraItems.STACK;
-
-            if (ExtraUpgrade.CREATIVE.equals(upgrade))
-                return ExtraItems.CREATIVE;
-
-            if (ExtraUpgrade.IONIC_MEMBRANE.equals(upgrade))
-                return ExtraItems.IONIC_MEMBRANE;
-
-        }
-
-        if (ModList.get().isLoaded("mekanism_empowered")) {
-
-            if (MekEmpUpgrade.getAUTO_INSERTER().equals(upgrade))
-                return MekEmpItems.INSTANCE.getAUTO_INSERTER();
-
-            if (MekEmpUpgrade.getEMPOWERED_ENERGY().equals(upgrade))
-                return MekEmpItems.INSTANCE.getEMPOWERED_ENERGY();
-
-            if (MekEmpUpgrade.getEMPOWERED_SPEED().equals(upgrade))
-                return MekEmpItems.INSTANCE.getEMPOWERED_SPEED();
-
-            if (MekEmpUpgrade.getFAST_ITEM_EJECT().equals(upgrade))
-                return MekEmpItems.INSTANCE.getFAST_ITEM_EJECT();
-
-            if (MekEmpUpgrade.getFAST_ITEM_INSERT().equals(upgrade))
-                return MekEmpItems.INSTANCE.getFAST_ITEM_INSERT();
-
-            if (MekEmpUpgrade.getIO_CAPACITY().equals(upgrade))
-                return MekEmpItems.INSTANCE.getIO_CAPACITY();
-
-        }
 
         return null;
 

@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 @SuppressWarnings({ "removal", "null", "deprecation" })
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD, modid = MODID)
+@EventBusSubscriber(modid = MODID)
 public class Controller {
     @SubscribeEvent
     public static void gatherData(GatherDataEvent e) {
@@ -23,7 +23,7 @@ public class Controller {
     }
 
     private static <T extends DataProvider> void providerGen(GatherDataEvent e, DataGenerator g, T f) {
-        g.addProvider(e.includeClient(), f);
+        e.addProvider(f);
     }
 
 }

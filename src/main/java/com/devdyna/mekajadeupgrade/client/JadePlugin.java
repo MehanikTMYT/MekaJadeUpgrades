@@ -7,7 +7,7 @@ import snownee.jade.api.*;
 
 @WailaPlugin
 public class JadePlugin implements IWailaPlugin {
-   
+
     @Override
     public void registerClient(IWailaClientRegistration r) {
         r.registerBlockComponent(UpgradeProvider.INSTANCE,
